@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>🛠 Admin Dashboard - Real-Time Bus Tracker</title>
+  <meta charset="UTF-8" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, button, textarea { padding: 10px; margin: 8px 0; width: 100%; max-width: 500px; }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    .bus-list { margin-top: 30px; }
+    table { border-collapse: collapse; width: 100%; max-width: 800px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h1>🛠 Admin Dashboard</h1>
+
+  <form id="addBusForm">
+    <label>Bus ID</label>
+    <input type="text" id="busId" required />
+
+    <label>Route (comma-separated station names)</label>
+    <textarea id="routeInput" placeholder="Pune,Satara,Karad,Sangli" required></textarea>
+
+    <label>Dispatch Time</label>
+    <input type="time" id="dispatchTime" required />
+
+    <label>Driver Contact Number</label>
+    <input type="text" id="driverContact" required />
+
+    <button type="submit">➕ Add Bus</button>
+  </form>
+
+  <div class="bus-list">
+    <h2>🚌 Current Buses</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Bus ID</th>
+          <th>Route</th>
+          <th>Dispatch Time</th>
+          <th>Driver Contact</th>
+        </tr>
+      </thead>
+      <tbody id="busTableBody">
+        <!-- Filled via JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    async function loadBuses() {
+      const res = await fetch('/admin/get_buses');
+      const buses = await res.json();
+      const tbody = document.getElementById('busTableBody');
+      tbody.innerHTML = '';
+
+      buses.forEach(bus => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${bus.id}</td>
+          <td>${bus.route.join(" → ")}</td>
+          <td>${bus.dispatch_time}</td>
+          <td>${bus.driver_contact}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    document.getElementById("addBusForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const newBus = {
+        id: document.getElementById("busId").value,
+        route: document.getElementById("routeInput").value.split(',').map(s => s.trim()),
+        dispatch_time: document.getElementById("dispatchTime").value,
+        driver_contact: document.getElementById("driverContact").value
+      };
+
+      await fetch('/admin/add_bus', {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newBus)
+      });
+
+      e.target.reset();
+      loadBuses();
+    });
+
+    loadBuses();
+  </script>
+</body>
+</html>

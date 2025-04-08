@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Bus Tracker</title>
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD318mjdzRMpOj3FGsroMenhCZ3WFGL41E"></script>
+</head>
+<body>
+    <h2>🚌 Real-Time Bus Tracker</h2>
+
+    <form id="trackForm">
+        <label for="route">Select Route:</label>
+        <select id="route" name="route">
+            {% for route in routes %}
+                <option value="{{ route }}">{{ route }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label for="from_station">From Station:</label>
+        <select id="from_station" name="from_station">
+            {% for station in stations %}
+                <option value="{{ station }}">{{ station }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label for="to_station">To Station:</label>
+        <select id="to_station" name="to_station">
+            {% for station in stations %}
+                <option value="{{ station }}">{{ station }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <button type="submit">Track</button>
+    </form>
+
+    <div id="output" style="margin-top: 30px;">
+        <h3>Status:</h3>
+        <p id="eta">Waiting for update...</p>
+        <p id="bus_location"></p>
+        <p id="start_time"></p>
+        <p id="driver_contact"></p>
+    </div>
+
+    <script>
+        const socket = io();
+
+        document.getElementById("trackForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const data = {
+                route: document.getElementById("route").value,
+                from_station: document.getElementById("from_station").value,
+                to_station: document.getElementById("to_station").value
+            };
+
+            const response = await fetch("/get_eta", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            document.getElementById("eta").innerText = result.message;
+        });
+
+        socket.on("eta_update", function (data) {
+            document.getElementById("eta").innerText = `Estimated Time of Arrival: ${data.eta_minutes} minutes`;
+            document.getElementById("bus_location").innerText = `Bus Location: Latitude ${data.bus_location.lat}, Longitude ${data.bus_location.lng}`;
+            document.getElementById("start_time").innerText = `Bus Started At: ${data.start_time}`;
+            document.getElementById("driver_contact").innerText = `Driver Contact: ${data.driver_contact}`;
+        });
+    </script>
+</body>
+</html>
